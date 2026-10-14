@@ -4,7 +4,7 @@
   "description": "Bloco de notas para escrever: ideias, cenas, personagens e reflexões.",
   "lang": "pt-BR",
   "dir": "ltr",
-  "id": "./",
+  "id": "/notas/",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

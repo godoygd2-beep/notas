@@ -3,7 +3,7 @@ import { FIREBASE } from './config.js';
 import { createFirebaseStore, createDemoStore } from './store.js';
 import { paras, pText, toText, titleOf, wordsOf, mergeRuns, parasToHtml, speechToText, buildBlocks, toMd, toTxt, toDocx, versions, newest, conflictOf, maxOtherAt, esc } from './text.js';
 
-export const VERSAO = '1.0.0';
+export const VERSAO = '1.0.1';
 
 const $ = s => document.querySelector(s);
 const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();

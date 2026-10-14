@@ -1,6 +1,6 @@
 /* Modo offline: guarda o app no aparelho para abrir sem internet.
    Para publicar uma versão nova, mude VERSION (e VERSAO em src/main.js); o app mostra "Tem uma versão nova do app". */
-const VERSION = '1.0.0';
+const VERSION = '1.0.1';
 const CORE = 'ne-core-' + VERSION;
 const RUNTIME = 'ne-runtime';
 const FIREBASE = 'https://www.gstatic.com/firebasejs/12.19.0/';
