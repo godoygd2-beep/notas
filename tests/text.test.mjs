@@ -1,7 +1,7 @@
 // node tests/text.test.mjs
 import assert from 'node:assert/strict';
 import { writeFileSync } from 'node:fs';
-import { paras, pText, toText, titleOf, wordsOf, speechToText, buildBlocks, toMd, toTxt, toDocx, parasToHtml, conflictOf, newest, maxOtherAt, decode } from '../src/text.js';
+import { paras, pText, toText, titleOf, wordsOf, speechToText, buildBlocks, toMd, toTxt, toDocx, parasToHtml, conflictOf, newest, maxOtherAt, decode, mergeSpeech } from '../src/text.js';
 
 let n = 0; const t = (name, fn) => { fn(); n++; };
 
@@ -39,6 +39,17 @@ t('ditado', () => {
   assert.equal(speechToText('e depois ponto final', 'texto anterior.'), ' E depois.');
   assert.equal(speechToText('mais um pouco', 'meio da frase'), ' mais um pouco');
   assert.equal(speechToText('vírgula e então', 'frase'), ', e então');
+});
+t('ditado do Android: pedaços repetidos e crescendo viram uma frase só', () => {
+  const partes = ['Oi', 'oi bom', 'oi bom dia', 'isso', 'isso é um teste', 'vamos', 'vamos', 'vamos ver o', 'vamos ver o que', 'vamos ver o que você', 'vamos ver o que você sabe', 'vamos ver o que você sabe fazer'];
+  assert.equal(mergeSpeech(partes), 'oi bom dia isso é um teste vamos ver o que você sabe fazer');
+});
+t('ditado: pedaço que repete tudo o que já veio', () => {
+  assert.equal(mergeSpeech(['oi bom dia', 'oi bom dia isso é um teste']), 'oi bom dia isso é um teste');
+});
+t('ditado: pedaços normais (computador) só se juntam', () => {
+  assert.equal(mergeSpeech(['ela abriu a porta', 'devagar vírgula como quem pede licença']), 'ela abriu a porta devagar vírgula como quem pede licença');
+  assert.equal(mergeSpeech(['', ' oi ', null]), 'oi');
 });
 t('versões: sem conflito quando a mais nova viu a outra', () => {
   const v = { A: { html: 'x', at: 100, seen: 0 }, B: { html: 'y', at: 200, seen: 100 } };

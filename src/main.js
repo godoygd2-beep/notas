@@ -1,9 +1,9 @@
 /* Notas de escrita — telas e lógica. */
 import { FIREBASE } from './config.js';
 import { createFirebaseStore, createDemoStore } from './store.js';
-import { paras, pText, toText, titleOf, wordsOf, mergeRuns, parasToHtml, speechToText, buildBlocks, toMd, toTxt, toDocx, versions, newest, conflictOf, maxOtherAt, esc } from './text.js';
+import { paras, pText, toText, titleOf, wordsOf, mergeRuns, parasToHtml, speechToText, mergeSpeech, buildBlocks, toMd, toTxt, toDocx, versions, newest, conflictOf, maxOtherAt, esc } from './text.js';
 
-export const VERSAO = '1.0.1';
+export const VERSAO = '1.0.2';
 
 const $ = s => document.querySelector(s);
 const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -894,7 +894,8 @@ function resolveConflict(how) {
 $('#compareBtn').onclick = compareSheet;
 
 /* ---------- ditado ---------- */
-let rec = null, voiceRaw = '', voiceDone = false, voiceFinal = '';
+/* sessions: texto de cada rodada já encerrada (o Chrome encerra sozinho depois de uma pausa e o app recomeça) */
+let rec = null, voiceRaw = '', voiceDone = false, sessions = [], curSession = '';
 function prevChar() {
   try { restoreSel(); const s = getSelection(); if (!s.rangeCount) return ''; const r = s.getRangeAt(0).cloneRange(); r.setStart(body, 0); return r.toString().slice(-3); }
   catch (e) { return ''; }
@@ -902,7 +903,7 @@ function prevChar() {
 function voiceSheet() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) { toast('Este navegador não tem ditado. Use o microfone do teclado do celular.'); return; }
-  voiceRaw = ''; voiceFinal = ''; voiceDone = false;
+  voiceRaw = ''; sessions = []; curSession = ''; voiceDone = false;
   openSheet('<div class="voice" id="voiceBox"><div class="pulse">' + IC.mic + '</div><div class="voice-state" id="vState">Ouvindo… pode falar.</div>' +
     '<div class="voice-live" id="vLive"></div>' +
     '<div class="voice-help">Fale a pontuação: <code>vírgula</code> <code>ponto</code> <code>interrogação</code> <code>exclamação</code> <code>dois pontos</code> <code>nova linha</code> <code>travessão</code></div>' +
@@ -910,9 +911,11 @@ function voiceSheet() {
   try {
     rec = new SR(); rec.lang = 'pt-BR'; rec.continuous = true; rec.interimResults = true;
     rec.onresult = e => {
-      let interim = '';
-      for (let i = e.resultIndex; i < e.results.length; i++) { if (e.results[i].isFinal) voiceFinal += ' ' + e.results[i][0].transcript; else interim += ' ' + e.results[i][0].transcript; }
-      voiceRaw = (voiceFinal + interim).trim(); showVoice();
+      /* refaz a rodada inteira a cada resposta, em vez de somar pedaços (no Android eles chegam repetidos) */
+      const parts = [];
+      for (let i = 0; i < e.results.length; i++) parts.push(e.results[i][0].transcript);
+      curSession = mergeSpeech(parts);
+      voiceRaw = mergeSpeech(sessions.concat([curSession])); showVoice();
     };
     rec.onerror = ev => {
       const st = $('#vState'); if (!st) return;
@@ -920,7 +923,10 @@ function voiceSheet() {
       if (m) st.textContent = m;
       if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed' || ev.error === 'audio-capture') { $('#voiceBox').classList.add('idle'); voiceDone = true; }
     };
-    rec.onend = () => { if (rec && !voiceDone) { try { rec.start(); } catch (e) { /* ignora */ } } };
+    rec.onend = () => {
+      if (curSession) { sessions.push(curSession); curSession = ''; voiceRaw = mergeSpeech(sessions); }
+      if (rec && !voiceDone) { try { rec.start(); } catch (e) { /* ignora */ } }
+    };
     rec.start();
   } catch (e) { rec = null; const st = $('#vState'); if (st) st.textContent = 'Não deu para começar o ditado.'; }
 }

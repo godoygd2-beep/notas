@@ -86,6 +86,28 @@ export function speechToText(raw, prev) {
   return s;
 }
 
+/* Junta os pedaços do reconhecimento de voz.
+   No Chrome do Android cada pedaço repete o anterior e acrescenta palavras
+   ("oi", "oi bom", "oi bom dia"); aqui fica só a versão mais completa. */
+const nSpeech = s => s.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, '').replace(/\s+/g, ' ').trim();
+export function mergeSpeech(parts) {
+  const out = [];
+  for (const raw of parts) {
+    const t = (raw || '').trim(); if (!t) continue;
+    const b = nSpeech(t); if (!b) continue;
+    if (out.length) {
+      const all = nSpeech(out.join(' '));
+      if (b.startsWith(all)) { out.length = 0; out.push(t); continue; }   /* repete tudo o que já veio */
+      if (all.endsWith(b) || all.startsWith(b)) continue;                   /* pedaço já incluído */
+      const a = nSpeech(out[out.length - 1]);
+      if (b.startsWith(a)) { out[out.length - 1] = t; continue; }          /* cresce o último pedaço */
+      if (a.startsWith(b)) continue;
+    }
+    out.push(t);
+  }
+  return out.join(' ');
+}
+
 /* ---------- exportação ---------- */
 /* notes: [{html, type, gid, nb, created}]; ctx: {cadernos, typesFor(nb) → [{id,name}], groupName(gid) → nome|null, fullDate(ts), today} */
 export function buildBlocks(notes, label, ctx) {
