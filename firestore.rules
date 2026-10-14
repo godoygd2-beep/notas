@@ -1,0 +1,22 @@
+rules_version = '2';
+// Projeto Firebase compartilhado entre a Carteira e o Notas de escrita.
+// Cada pessoa só lê e grava os próprios dados.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Minha Carteira: users/{seu uid}
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+      match /ops/{op} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+    }
+    // Notas de escrita: notas/{seu uid} (cadernos) e notas/{seu uid}/notes|groups|postits
+    match /notas/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+      match /{colecao}/{id} {
+        allow read, write: if request.auth != null && request.auth.uid == uid
+          && colecao in ['notes', 'groups', 'postits'];
+      }
+    }
+  }
+}
